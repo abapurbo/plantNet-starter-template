@@ -1,7 +1,12 @@
-const AddPlantForm = () => {
+/* eslint-disable react/prop-types */
+// eslint-disable-next-line react/prop-types
+import { TbFidgetSpinner } from 'react-icons/tb';
+
+const AddPlantForm = ({ handleSubmit, setUploadImageText, uploadImageText, isLoading }) => {
+
   return (
     <div className='w-full min-h-[calc(100vh-40px)] flex flex-col justify-center items-center text-gray-800 rounded-xl bg-gray-50'>
-      <form>
+      <form onSubmit={handleSubmit}>
         <div className='grid grid-cols-1 lg:grid-cols-2 gap-10'>
           <div className='space-y-6'>
             {/* Name */}
@@ -88,18 +93,34 @@ const AddPlantForm = () => {
                   <label>
                     <input
                       className='text-sm cursor-pointer w-36 hidden'
+                      onChange={e => setUploadImageText({image:e.target.files[0],url:URL.createObjectURL(e.target.files[0])})}
                       type='file'
                       name='image'
+
                       id='image'
                       accept='image/*'
                       hidden
                     />
+
                     <div className='bg-lime-500 text-white border border-gray-300 rounded font-semibold cursor-pointer p-1 px-3 hover:bg-lime-500'>
-                      Upload
+                      {uploadImageText?.image?.name}
                     </div>
                   </label>
                 </div>
               </div>
+            </div>
+            <div className='flex  space-x-18 items-center text-xl'>
+              {
+                uploadImageText?.image?.size && (
+                  <>
+                    {/* URL.createObjectURL die a */}
+                    <img className='w-10 h-10' src={URL.createObjectURL(uploadImageText)} alt="plants image" />
+
+
+                    <p >Image size:{uploadImageText?.image?.size} Bytes</p>
+                  </>
+                )
+              }
             </div>
 
             {/* Submit Button */}
@@ -107,7 +128,9 @@ const AddPlantForm = () => {
               type='submit'
               className='w-full p-3 mt-5 text-center font-medium text-white transition duration-200 rounded shadow-md bg-lime-500 '
             >
-              Save & Continue
+              {
+                isLoading ? <TbFidgetSpinner className='animate-spin m-auto' /> : ' Save & Continue'
+              }
             </button>
           </div>
         </div>

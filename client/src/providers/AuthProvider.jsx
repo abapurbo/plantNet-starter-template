@@ -1,6 +1,7 @@
 /* eslint-disable react/prop-types */
 import { createContext, useEffect, useState } from 'react'
 import {
+  FacebookAuthProvider,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   getAuth,
@@ -17,6 +18,7 @@ import axios from 'axios'
 export const AuthContext = createContext(null)
 const auth = getAuth(app)
 const googleProvider = new GoogleAuthProvider()
+const facebookProvider = new FacebookAuthProvider()
 
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
@@ -36,6 +38,10 @@ const AuthProvider = ({ children }) => {
     setLoading(true)
     return signInWithPopup(auth, googleProvider)
   }
+  const signInWithFacebook = () => {
+    setLoading(true);
+    return signInWithPopup(auth, facebookProvider)
+  }
 
   const logOut = async () => {
     setLoading(true)
@@ -48,29 +54,45 @@ const AuthProvider = ({ children }) => {
       photoURL: photo,
     })
   }
-
   // onAuthStateChange
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async currentUser => {
+      setUser(currentUser)
+      console.log()
+      setLoading(false)
       console.log('CurrentUser-->', currentUser?.email)
-      if (currentUser?.email) {
-        setUser(currentUser)
-
+      if (currentUser) {
+        
         // Get JWT token
-        await axios.post(
-          `${import.meta.env.VITE_API_URL}/jwt`,
+        await axios.post(`http://localhost:4000/jwt`,
           {
             email: currentUser?.email,
           },
           { withCredentials: true }
         )
+          .catch(err => console.log('jwt error', err))
+        // save user info in db
+        await axios.post(`http://localhost:4000/users/${currentUser?.email}`,
+          {
+            name: currentUser?.displayName,
+            image: currentUser?.photoURL,
+            email: currentUser?.email,
+          },{
+            withCredentials:true
+          }
+        )
+        .then(res=>console.log(res))
+        .catch(error=>console.log('user error',error))
+
       } else {
         setUser(currentUser)
+        setLoading(false)
         await axios.get(`${import.meta.env.VITE_API_URL}/logout`, {
           withCredentials: true,
         })
+
       }
-      setLoading(false)
+
     })
     return () => {
       return unsubscribe()
@@ -85,6 +107,7 @@ const AuthProvider = ({ children }) => {
     createUser,
     signIn,
     signInWithGoogle,
+    signInWithFacebook,
     logOut,
     updateUserProfile,
   }

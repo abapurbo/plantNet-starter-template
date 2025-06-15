@@ -4,10 +4,12 @@ import Heading from '../../components/Shared/Heading'
 import Button from '../../components/Shared/Button/Button'
 import PurchaseModal from '../../components/Modal/PurchaseModal'
 import { useState } from 'react'
+import { useLoaderData } from 'react-router-dom'
 
 const PlantDetails = () => {
   let [isOpen, setIsOpen] = useState(false)
-
+  const data=useLoaderData();
+  console.log(data)
   const closeModal = () => {
     setIsOpen(false)
   }
@@ -24,7 +26,7 @@ const PlantDetails = () => {
             <div className='w-full overflow-hidden rounded-xl'>
               <img
                 className='object-cover w-full'
-                src='https://i.ibb.co/DDnw6j9/1738597899-golden-money-plant.jpg'
+                src={''}
                 alt='header image'
               />
             </div>

@@ -14,12 +14,15 @@ const useAxiosSecure = () => {
   useEffect(() => {
     axiosSecure.interceptors.response.use(
       res => {
+        console.log("hello")
         return res
       },
       async error => {
+      
         console.log('Error caught from axios interceptor-->', error.response)
         if (error.response.status === 401 || error.response.status === 403) {
           // logout
+          console.log("hello error party",error)
           logOut()
           // navigate to login
           navigate('/login')
