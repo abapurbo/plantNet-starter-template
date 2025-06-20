@@ -10,12 +10,12 @@ const port = process.env.PORT || 4000
 const app = express()
 // middleware
 const corsOptions = {
-  origin: ['http://localhost:5173', 'http://localhost:5174'],
-  methods: ['get', 'post', 'put', 'delete', 'patch', 'options'],
+  origin: ['http://localhost:5173'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   credentials: true,
   optionSuccessStatus: 200,
 }
-app.use(cors(corsOptions))
+app.use('*', cors(corsOptions))
 
 app.use(express.json())
 app.use(cookieParser())
@@ -49,8 +49,8 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const userCollection = client.db('plantNet-session').collection('users');
-    const plantsCollection = client.db('plantNet-session').collection('plants')
-    // Generate jwt token
+    const plantsCollection = client.db('plantNet-session').collection('plants');
+    const orderCollection = client.db('plantNet-session').collection('order')    // Generate jwt token
     app.post('/jwt', async (req, res) => {
       const email = req.body
       const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, {
@@ -59,18 +59,66 @@ async function run() {
       res
         .cookie('token', token, {
           httpOnly: true,
-          secure:false,
-          sameSite:'lax',
+          secure: false,
+          sameSite: 'lax',
           // secure: process.env.NODE_ENV === 'production',
           // sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
         })
         .send({ success: true })
     })
-    app.get('/plants',async(req,res)=>{
-      const result=await plantsCollection.find().toArray();
+    app.get('/plants', async (req, res) => {
+      const result = await plantsCollection.find().toArray();
       res.send(result)
     })
-    app.post('/users/:email',verifyToken,  async (req, res) => {
+    // specific plants details
+    app.get('/plantDetails/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await plantsCollection.findOne(query);
+      res.send(result)
+    })
+    // customer order history
+    app.get('/customerOrder/:email', verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const query = { "customer.email": email };
+      const result = await orderCollection.aggregate([
+        {
+          $match: query
+        },
+        {
+          $addFields: {
+            plantId: { $toObjectId: '$plantId' }
+          },
+        }, {
+          $lookup: {
+            from: 'plants',
+            localField: 'plantId',
+            foreignField: '_id',
+            as: 'plants'
+          },
+        },
+        {
+          $unwind: '$plants'
+        },
+        {
+          $addFields: {
+            name: '$plants.name',
+            image: '$plants.image',
+            category: '$plants.category',
+            price: '$plants.totalPrice',
+          }
+        },{
+          $project:{
+            plants:0,
+          
+            
+          }
+        }
+      ]).toArray();
+      res.send(result);
+
+    })
+    app.post('/users/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { email: email }
       const user = req.body;
@@ -93,7 +141,48 @@ async function run() {
       const result = await plantsCollection.insertOne(plant);
       res.send(result);
     })
+    //order cancel in the database
+    
+    // specific plant quantity update
+    app.patch('/plants/quantity/:id', verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const { updateQuantity } = req.body;
 
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $inc: {
+          quantity: -updateQuantity
+        }
+      };
+      const result = await plantsCollection.updateOne(filter, updateDoc);
+      console.log(result)
+      res.send(result);
+    })
+    // order a plant
+    app.post('/order', verifyToken, async (req, res) => {
+      const order = req.body;
+      const id = order?.plantId;
+      const query = { _id: new ObjectId(id) }
+      const plant = await plantsCollection.findOne(query);
+      let totalPrice = plant?.price;
+      if (order?.quantity > plant?.quantity) {
+        return res.status(400).send({ status: 'error', message: `Requested quantity exceeds available stock!.Only ${plant?.quantity} items are available.` })
+      }
+      if (order?.quantity <= plant?.quantity) {
+        const quantity = order?.quantity;
+        const price = plant?.price;
+        totalPrice = price * quantity
+      }
+      const orderPlant = {
+        ...order,
+        totalPrice: totalPrice,
+        seller: plant?.seller?.email,
+        status: 'pending',
+
+      }
+      const result = await orderCollection.insertOne(orderPlant);
+      res.send(result)
+    })
     // Logout
     app.get('/logout', async (req, res) => {
       try {
