@@ -6,11 +6,12 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const jwt = require('jsonwebtoken')
 const morgan = require('morgan')
 
-const port = process.env.PORT || 9000
+const port = process.env.PORT || 4000
 const app = express()
 // middleware
 const corsOptions = {
   origin: ['http://localhost:5173', 'http://localhost:5174'],
+  methods: ['get', 'post', 'put', 'delete', 'patch', 'options'],
   credentials: true,
   optionSuccessStatus: 200,
 }
@@ -22,7 +23,6 @@ app.use(morgan('dev'))
 
 const verifyToken = async (req, res, next) => {
   const token = req.cookies?.token
-
   if (!token) {
     return res.status(401).send({ message: 'unauthorized access' })
   }
@@ -35,9 +35,9 @@ const verifyToken = async (req, res, next) => {
     next()
   })
 }
-
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.mq0mae1.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
-
+// ata jokhon amra deploy korbo tokhon amra ata use korbo 
+// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.mq0mae1.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
+const uri = 'mongodb://localhost:27017'
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -48,20 +48,52 @@ const client = new MongoClient(uri, {
 })
 async function run() {
   try {
+    const userCollection = client.db('plantNet-session').collection('users');
+    const plantsCollection = client.db('plantNet-session').collection('plants')
     // Generate jwt token
     app.post('/jwt', async (req, res) => {
       const email = req.body
       const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: '365d',
+        expiresIn: '1h',
       })
       res
         .cookie('token', token, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+          secure:false,
+          sameSite:'lax',
+          // secure: process.env.NODE_ENV === 'production',
+          // sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
         })
         .send({ success: true })
     })
+    app.get('/plants',async(req,res)=>{
+      const result=await plantsCollection.find().toArray();
+      res.send(result)
+    })
+    app.post('/users/:email',verifyToken,  async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email }
+      const user = req.body;
+      const isExist = await userCollection.findOne(query);
+      if (isExist) {
+        return res.send(isExist)
+      }
+      const result = await userCollection.insertOne({
+        ...user,
+        role: 'customer',
+        timestamp: new Date(),
+
+      });
+      res.send(result);
+    })
+
+    // save a plant data in db
+    app.post('/plants', verifyToken, async (req, res) => {
+      const plant = req.body;
+      const result = await plantsCollection.insertOne(plant);
+      res.send(result);
+    })
+
     // Logout
     app.get('/logout', async (req, res) => {
       try {
