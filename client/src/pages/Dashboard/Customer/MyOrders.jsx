@@ -77,7 +77,7 @@ const MyOrders = () => {
                 </thead>
                 <tbody>
                   {
-                    orders.map((order, index) => <CustomerOrderDataRow key={index} order={order} isLoading={isLoading}></CustomerOrderDataRow>)
+                    orders.map((order, index) => <CustomerOrderDataRow key={index} order={order} refetch={refetch}></CustomerOrderDataRow>)
                   }
                 </tbody>
               </table>

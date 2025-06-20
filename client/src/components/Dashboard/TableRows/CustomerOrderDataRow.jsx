@@ -2,20 +2,23 @@ import PropTypes from 'prop-types'
 import { useState } from 'react'
 import DeleteModal from '../../Modal/DeleteModal'
 import useAxiosSecure from '../../../hooks/useAxiosSecure'
-const CustomerOrderDataRow = ({ order }) => {
-  const { name, quantity, category, totalPrice, image, status, _id } = order || {}
+import toast from 'react-hot-toast'
+const CustomerOrderDataRow = ({ order, refetch }) => {
+  const { name, quantity, category, totalPrice, image, status, _id,plantId } = order || {}
   let [isOpen, setIsOpen] = useState(false)
   const closeModal = () => setIsOpen(false)
-  const axiosSecure=useAxiosSecure()
+  const axiosSecure = useAxiosSecure()
   // handle delete order/cancel
   const handleDelete = async (id) => {
     try {
       // console.log(id)
-      await  axiosSecure.delete(`/order/delete/${id}`)
+      await axiosSecure.delete(`/order/delete/${id}`)
+      await axiosSecure.patch(`/plants/quantity/${plantId}`, { updateQuantity: quantity, status: 'increase' })
     } catch (err) {
-      console.log(err)
+      toast.error(err.response.data.message)
     } finally {
       closeModal()
+      refetch()
     }
   }
   return (

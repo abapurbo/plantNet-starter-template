@@ -107,11 +107,11 @@ async function run() {
             category: '$plants.category',
             price: '$plants.totalPrice',
           }
-        },{
-          $project:{
-            plants:0,
-          
-            
+        }, {
+          $project: {
+            plants: 0,
+
+
           }
         }
       ]).toArray();
@@ -142,21 +142,55 @@ async function run() {
       res.send(result);
     })
     //order cancel in the database
-    
+    app.delete('/order/delete/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const order = await orderCollection.findOne(query)
+      if (order.status === 'delivered') {
+        return res.status(409).send({ message: "Sorry, you cannot cancel this order because it has already been delivered." })
+      }
+      const result = await orderCollection.deleteOne(query);
+      res.send(result);
+    })
     // specific plant quantity update
     app.patch('/plants/quantity/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
-      const { updateQuantity } = req.body;
+      const { updateQuantity, status } = req.body;
 
       const filter = { _id: new ObjectId(id) };
-      const updateDoc = {
+      let updateDoc = {
         $inc: {
           quantity: -updateQuantity
         }
       };
+      // status jodi delivered hoy thole 
+      if (status === 'increase') {
+        updateDoc = {
+          $inc: {
+            quantity: updateQuantity
+          }
+        }
+      }
       const result = await plantsCollection.updateOne(filter, updateDoc);
       console.log(result)
       res.send(result);
+    })
+    // mange user status and role
+    app.patch('/users/:email',verifyToken,async(req,res)=>{
+      const email=req.params.email;
+      const query={email:email};
+      const user=await userCollection.findOne(query);
+      if(!user||user?.status==='requested'){
+        return res.status(400).send('You have already requested, wait for some time.')
+      }
+      const updateDoc={
+        $set:{
+          status:'requested'
+        }
+      };
+      const result=await userCollection.updateOne(query,updateDoc);
+      console.log(result)
+      res.send(result)
     })
     // order a plant
     app.post('/order', verifyToken, async (req, res) => {
