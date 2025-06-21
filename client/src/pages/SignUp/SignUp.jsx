@@ -3,7 +3,7 @@ import { FcGoogle } from 'react-icons/fc'
 import useAuth from '../../hooks/useAuth'
 import { toast } from 'react-hot-toast'
 import { TbFidgetSpinner } from 'react-icons/tb'
-import { imageUpload } from '../../api/utilites'
+import { imageUpload, saveUser } from '../../api/utilites'
 
 const SignUp = () => {
   const { createUser, updateUserProfile, signInWithGoogle, loading } = useAuth()
@@ -16,16 +16,16 @@ const SignUp = () => {
     const email = form.email.value
     const password = form.password.value
     const image = form.image.files[0]
-    const displayUrl=await imageUpload(image)
-   
+    const displayURL = await imageUpload(image)
+   console.log(displayURL)
     try {
       //2. User Registration
       const result = await createUser(email, password)
 
       //3. Save username & profile photo
-      await updateUserProfile(name, displayUrl)
-      console.log(result)
-
+      await updateUserProfile(name, displayURL)
+      // save  user info in database
+      await saveUser({ ...result.user, disPlayName: name, displayURL })
       navigate('/')
       toast.success('Signup Successful')
     } catch (err) {
@@ -38,16 +38,16 @@ const SignUp = () => {
   const handleGoogleSignIn = async () => {
     try {
       //User Registration using google
-      await signInWithGoogle()
-
-      navigate('/')
+      const data = await signInWithGoogle()
+      await saveUser(data?.user)
+        navigate('/')
       toast.success('Signup Successful')
     } catch (err) {
       console.log(err)
       toast.error(err?.message)
     }
   }
- 
+
   return (
     <div className='flex justify-center items-center min-h-screen bg-white'>
       <div className='flex flex-col max-w-md p-6 rounded-md sm:p-10 bg-gray-100 text-gray-900'>
@@ -125,8 +125,8 @@ const SignUp = () => {
               className='bg-lime-500 w-full rounded-md py-3 text-white'
             >
               {loading ? (
-                <TbFidgetSpinner className='animate-spin m-auto' /> 
-               
+                <TbFidgetSpinner className='animate-spin m-auto' />
+
               ) : (
                 'Continue'
               )}

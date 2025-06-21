@@ -118,6 +118,13 @@ async function run() {
       res.send(result);
 
     })
+       // user role setup
+    app.get('/user/role/:email',verifyToken,async(req,res)=>{
+      const email=req.params.email;
+      const query={email:email};
+      const result=await userCollection.findOne(query);
+      res.send({role:result?.role});
+    })
     app.post('/users/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { email: email }
@@ -192,6 +199,7 @@ async function run() {
       console.log(result)
       res.send(result)
     })
+ 
     // order a plant
     app.post('/order', verifyToken, async (req, res) => {
       const order = req.body;

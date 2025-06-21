@@ -58,11 +58,9 @@ const AuthProvider = ({ children }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async currentUser => {
       setUser(currentUser)
-      console.log()
       setLoading(false)
-      console.log('CurrentUser-->', currentUser?.email)
-      if (currentUser) {
-        
+      if (currentUser?.email) {
+
         // Get JWT token
         await axios.post(`http://localhost:4000/jwt`,
           {
@@ -72,17 +70,8 @@ const AuthProvider = ({ children }) => {
         )
           .catch(err => console.log('jwt error', err))
         // save user info in db
-        await axios.post(`http://localhost:4000/users/${currentUser?.email}`,
-          {
-            name: currentUser?.displayName,
-            image: currentUser?.photoURL,
-            email: currentUser?.email,
-          },{
-            withCredentials:true
-          }
-        )
-        .then(res=>console.log(res))
-        .catch(error=>console.log('user error',error))
+       
+        
 
       } else {
         setUser(currentUser)
