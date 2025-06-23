@@ -8,19 +8,17 @@ export const imageUpload = async imageData => {
             'content-type': 'multipart/form-data'
         }
     })
-    console.log('hello', res)
     return res.data.data.display_url
 }
 export const saveUser = async (user) => {
-    console.log('hello ',user.photoURL)
+    console.log('hello', user.email)
     await axios.post(`http://localhost:4000/users/${user?.email}`,
         {
             name: user?.displayName,
             image: user?.photoURL,
             email: user?.email,
-        }, {
-        withCredentials: true
-    }
+        },
+       { withCredentials: true }
     )
         .catch(error => console.log('user error', error))
 }

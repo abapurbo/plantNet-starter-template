@@ -39,6 +39,7 @@ const SignUp = () => {
     try {
       //User Registration using google
       const data = await signInWithGoogle()
+      console.log(data)
       await saveUser(data?.user)
         navigate('/')
       toast.success('Signup Successful')

@@ -8,13 +8,16 @@ const Statistics = () => {
   if (isLoading) {
     return <LoadingSpinner></LoadingSpinner>
   }
-  if (role === 'customer') return <Navigate to ='/dashboard/my-orders'></Navigate>
+  if (role === 'customer') return <Navigate to='/dashboard/my-orders'></Navigate>
   return (
     <div>
       <Helmet>
         <title>Dashboard</title>
       </Helmet>
-      <AdminStatistics />
+      {
+        role === 'admin' && <AdminStatistics />
+      }
+
     </div>
   )
 }

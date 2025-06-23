@@ -3,7 +3,7 @@
 import { TbFidgetSpinner } from 'react-icons/tb';
 
 const AddPlantForm = ({ handleSubmit, setUploadImageText, uploadImageText, isLoading }) => {
-
+console.log(uploadImageText)
   return (
     <div className='w-full min-h-[calc(100vh-40px)] flex flex-col justify-center items-center text-gray-800 rounded-xl bg-gray-50'>
       <form onSubmit={handleSubmit}>
@@ -114,7 +114,7 @@ const AddPlantForm = ({ handleSubmit, setUploadImageText, uploadImageText, isLoa
                 uploadImageText?.image?.size && (
                   <>
                     {/* URL.createObjectURL die a */}
-                    <img className='w-10 h-10' src={URL.createObjectURL(uploadImageText)} alt="plants image" />
+                    <img className='w-10 h-10' src={uploadImageText?.url} alt="plants image" />
 
 
                     <p >Image size:{uploadImageText?.image?.size} Bytes</p>

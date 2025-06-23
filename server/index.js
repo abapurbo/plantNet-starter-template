@@ -15,7 +15,7 @@ const corsOptions = {
   credentials: true,
   optionSuccessStatus: 200,
 }
-app.use('*', cors(corsOptions))
+app.use(cors(corsOptions))
 
 app.use(express.json())
 app.use(cookieParser())
@@ -23,6 +23,7 @@ app.use(morgan('dev'))
 
 const verifyToken = async (req, res, next) => {
   const token = req.cookies?.token
+  console.log("hloo", token)
   if (!token) {
     return res.status(401).send({ message: 'unauthorized access' })
   }
@@ -51,7 +52,29 @@ async function run() {
     const userCollection = client.db('plantNet-session').collection('users');
     const plantsCollection = client.db('plantNet-session').collection('plants');
     const orderCollection = client.db('plantNet-session').collection('order')    // Generate jwt token
+    // admin verifyToken  middleware
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.user?.email;
+      const query = { email: email };
+      const result = await userCollection.findOne(query);
+      if (!result && !result?.role === 'admin') {
+        return res.status(403).send({ message: 'Forbidden Access ! admin only actions' })
+      }
+      next()
+
+    }
+    const verifySeller = async (req, res, next) => {
+      const email = req.user?.email;
+      const query = { email: email };
+      const result = await userCollection.findOne(query);
+      if (!result && !result?.role === 'seller') {
+        return res.status(403).send({ message: 'Forbidden Access ! seller only actions' })
+      }
+      next()
+
+    }
     app.post('/jwt', async (req, res) => {
+
       const email = req.body
       const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: '1h',
@@ -61,17 +84,16 @@ async function run() {
           httpOnly: true,
           secure: false,
           sameSite: 'lax',
-          // secure: process.env.NODE_ENV === 'production',
-          // sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
         })
         .send({ success: true })
+
     })
     app.get('/plants', async (req, res) => {
       const result = await plantsCollection.find().toArray();
       res.send(result)
     })
     // specific plants details
-    app.get('/plantDetails/:id', async (req, res) => {
+    app.get('/plantDetails/:id',verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await plantsCollection.findOne(query);
@@ -118,17 +140,18 @@ async function run() {
       res.send(result);
 
     })
-       // user role setup
-    app.get('/user/role/:email',verifyToken,async(req,res)=>{
-      const email=req.params.email;
-      const query={email:email};
-      const result=await userCollection.findOne(query);
-      res.send({role:result?.role});
+    // user role setup
+    app.get('/user/role/:email', verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await userCollection.findOne(query);
+      res.send({ role: result?.role });
     })
     app.post('/users/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { email: email }
       const user = req.body;
+      console.log("user", user)
       const isExist = await userCollection.findOne(query);
       if (isExist) {
         return res.send(isExist)
@@ -141,9 +164,15 @@ async function run() {
       });
       res.send(result);
     })
-
+    // get all user 
+    app.get('/all-user/:email', verifyToken,verifyAdmin, async (req, res) => {
+      const email = req.params.email;
+      const query = { email: { $ne: email } }
+      const result = await userCollection.find(query).toArray();
+      res.send(result)
+    })
     // save a plant data in db
-    app.post('/plants', verifyToken, async (req, res) => {
+    app.post('/plants', verifyToken,verifySeller, async (req, res) => {
       const plant = req.body;
       const result = await plantsCollection.insertOne(plant);
       res.send(result);
@@ -160,7 +189,7 @@ async function run() {
       res.send(result);
     })
     // specific plant quantity update
-    app.patch('/plants/quantity/:id', verifyToken, async (req, res) => {
+    app.patch('/plants/quantity/:id', async (req, res) => {
       const id = req.params.id;
       const { updateQuantity, status } = req.body;
 
@@ -183,23 +212,23 @@ async function run() {
       res.send(result);
     })
     // mange user status and role
-    app.patch('/users/:email',verifyToken,async(req,res)=>{
-      const email=req.params.email;
-      const query={email:email};
-      const user=await userCollection.findOne(query);
-      if(!user||user?.status==='requested'){
+    app.patch('/users/:email', verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      if (!user || user?.status === 'Requested') {
         return res.status(400).send('You have already requested, wait for some time.')
       }
-      const updateDoc={
-        $set:{
-          status:'requested'
+      const updateDoc = {
+        $set: {
+          status: 'Requested'
         }
       };
-      const result=await userCollection.updateOne(query,updateDoc);
+      const result = await userCollection.updateOne(query, updateDoc);
       console.log(result)
       res.send(result)
     })
- 
+
     // order a plant
     app.post('/order', verifyToken, async (req, res) => {
       const order = req.body;
@@ -225,14 +254,28 @@ async function run() {
       const result = await orderCollection.insertOne(orderPlant);
       res.send(result)
     })
+    // update user role
+    app.patch('/user-role/:email', verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const { updateRole } = req.body;
+      const filter = { email: email };
+      const updateDoc = {
+        $set: {
+          role: updateRole,
+          status: "Verified"
+        }
+      }
+      const result = await userCollection.updateOne(filter, updateDoc);
+      res.send(result)
+    })
     // Logout
     app.get('/logout', async (req, res) => {
       try {
         res
           .clearCookie('token', {
             maxAge: 0,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+            secure: false,
+            sameSite: 'lax',
           })
           .send({ success: true })
       } catch (err) {
