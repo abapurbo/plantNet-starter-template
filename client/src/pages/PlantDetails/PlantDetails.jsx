@@ -11,10 +11,12 @@ import LoadingSpinner from './../../components/Shared/LoadingSpinner';
 const PlantDetails = () => {
   let [isOpen, setIsOpen] = useState(false)
   const { id } = useParams()
-  const { data=[],isLoading,refetch} = useQuery({
+  const { data,isLoading,refetch} = useQuery({
     queryKey: ['plantDetails',id],
     queryFn: async () => {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/plantDetails/${id}`);
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/plantDetails/${id}`,{
+        withCredentials:true
+      });
       return res.data
 
     }
@@ -50,7 +52,7 @@ const PlantDetails = () => {
           {/* Plant Info */}
           <Heading
             title={'Money Plant'}
-            subtitle={`Category: ${data.category}`}
+            subtitle={`Category: ${data?.category}`}
           />
           <hr className='my-6' />
           <div
@@ -71,7 +73,7 @@ const PlantDetails = () => {
                 gap-2
               '
           >
-            <div>Seller: {data.seller.name}</div>
+            <div>Seller: {data.seller?.name}</div>
 
             <img
               className='rounded-full'
@@ -79,7 +81,7 @@ const PlantDetails = () => {
               width='30'
               alt='Avatar'
               referrerPolicy='no-referrer'
-              src={data.seller.image}
+              src={data?.seller?.image}
             />
           </div>
           <hr className='my-6' />
@@ -91,12 +93,12 @@ const PlantDetails = () => {
                 text-neutral-500
               '
             >
-              Quantity: {data.quantity} Units Left Only!
+              Quantity: {data?.quantity} Units Left Only!
             </p>
           </div>
           <hr className='my-6' />
           <div className='flex justify-between'>
-            <p className='font-bold text-3xl text-gray-500'>Price: {data.price}$</p>
+            <p className='font-bold text-3xl text-gray-500'>Price: {data?.price}$</p>
             <div>
               <Button onClick={()=>setIsOpen(true)} label={data.quantity>0?'Purchase':'Out look stork'}/>
             </div>

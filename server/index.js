@@ -83,7 +83,7 @@ async function run() {
         .cookie('token', token, {
           httpOnly: true,
           secure: false,
-          sameSite: 'lax',
+          sameSite: 'none',
         })
         .send({ success: true })
 
@@ -146,6 +146,20 @@ async function run() {
       const query = { email: email };
       const result = await userCollection.findOne(query);
       res.send({ role: result?.role });
+    })
+    // get plants
+    app.get('/plants/seller',verifyToken,verifySeller,async(req,res)=>{
+      const email=req.user?.email;
+      const query={'seller.email':email}
+      const result=await plantsCollection.find(query).toArray();
+      res.send(result);
+    })
+  //  plant delete seller
+    app.delete('/plants/:id',verifyToken,verifySeller,async(req,res)=>{
+      const id=req.params.id
+      const query={_id:new ObjectId(id)}
+      const result=await plantsCollection.deleteOne(query)
+      res.send(result);
     })
     app.post('/users/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
@@ -275,7 +289,7 @@ async function run() {
           .clearCookie('token', {
             maxAge: 0,
             secure: false,
-            sameSite: 'lax',
+            sameSite: 'none',
           })
           .send({ success: true })
       } catch (err) {
