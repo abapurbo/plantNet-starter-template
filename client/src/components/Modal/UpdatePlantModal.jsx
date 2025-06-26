@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import PropTypes from 'prop-types'
 import {
   Dialog,
@@ -10,7 +11,7 @@ import { Fragment } from 'react'
 
 import UpdatePlantForm from '../Form/UpdatePlantForm'
 
-const UpdatePlantModal = ({ setIsEditModalOpen, isOpen }) => {
+const UpdatePlantModal = ({ setIsEditModalOpen, isOpen ,plant,refetch}) => {
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog
@@ -49,7 +50,7 @@ const UpdatePlantModal = ({ setIsEditModalOpen, isOpen }) => {
                   Update Plant Info
                 </DialogTitle>
                 <div className='mt-2 w-full'>
-                  <UpdatePlantForm />
+                  <UpdatePlantForm plant={plant} refetch={refetch} setIsEditModalOpen={setIsEditModalOpen}/>
                 </div>
                 <hr className='mt-8 ' />
                 <div className='mt-2 '>

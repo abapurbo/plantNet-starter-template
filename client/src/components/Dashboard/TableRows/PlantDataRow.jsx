@@ -5,11 +5,11 @@ import useAxiosSecure from './../../../hooks/useAxiosSecure';
 import toast from 'react-hot-toast';
 
 // eslint-disable-next-line react/prop-types
-const PlantDataRow = ({ plant,refetch }) => {
+const PlantDataRow = ({ plant, refetch }) => {
   let [isOpen, setIsOpen] = useState(false)
   const axiosSecure = useAxiosSecure()
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-
+  console.log(isOpen)
   function openModal() {
     setIsOpen(true)
   }
@@ -17,17 +17,17 @@ const PlantDataRow = ({ plant,refetch }) => {
     setIsOpen(false)
   }
 
-  const { name, image, category, price, quantity ,_id} = plant || {}
+  const { name, image, category, price, quantity, _id } = plant || {}
   // delete plants item
-  const handleDeletePlants = async() => {
-    try{
+  const handleDeletePlants = async () => {
+    try {
       await axiosSecure.delete(`/plants/${_id}`)
       toast.success('Successfully delete you item 👍')
     }
-    catch(err){
+    catch (err) {
       console.log(err)
     }
-    finally{
+    finally {
       setIsOpen(false)
       refetch()
     }
@@ -85,8 +85,10 @@ const PlantDataRow = ({ plant,refetch }) => {
           <span className='relative'>Update</span>
         </span>
         <UpdatePlantModal
+         plant={plant}
           isOpen={isEditModalOpen}
           setIsEditModalOpen={setIsEditModalOpen}
+          refetch={refetch}
         />
       </td>
     </tr>

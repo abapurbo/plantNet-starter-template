@@ -83,7 +83,7 @@ async function run() {
         .cookie('token', token, {
           httpOnly: true,
           secure: false,
-          sameSite: 'none',
+          sameSite: 'lax',
         })
         .send({ success: true })
 
@@ -93,7 +93,7 @@ async function run() {
       res.send(result)
     })
     // specific plants details
-    app.get('/plantDetails/:id',verifyToken, async (req, res) => {
+    app.get('/plantDetails/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await plantsCollection.findOne(query);
@@ -140,6 +140,47 @@ async function run() {
       res.send(result);
 
     })
+    //mange order
+    app.get('/mange/order', verifyToken, verifySeller, async (req, res) => {
+      const email = req.user?.email;
+
+      const query = { 'seller': email };
+      const result = await orderCollection.aggregate([
+        {
+          $match: query
+
+        }, {
+          $unwind: '$customer'
+        }, {
+          $addFields: {
+            name: '$customer.name',
+            email: '$customer.email',
+            image: '$customer.image'
+
+          }
+        }
+        , {
+          $project: {
+            customer: 0,
+          }
+        }
+      ]).toArray();
+      console.log(result)
+      res.send(result)
+    })
+    // change customer status
+    app.patch('/customer/order/:id', verifyToken, verifySeller, async (req, res) => {
+      const id = req.params.id;
+      const { status } = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updateStatus = {
+        $set: {
+          status: status
+        }
+      }
+      const result = await orderCollection.updateOne(filter, updateStatus);
+      res.send(result)
+    })
     // user role setup
     app.get('/user/role/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
@@ -148,17 +189,19 @@ async function run() {
       res.send({ role: result?.role });
     })
     // get plants
-    app.get('/plants/seller',verifyToken,verifySeller,async(req,res)=>{
-      const email=req.user?.email;
-      const query={'seller.email':email}
-      const result=await plantsCollection.find(query).toArray();
+    app.get('/plants/seller', verifyToken, verifySeller, async (req, res) => {
+      const email = req.user?.email;
+      const query = { 'seller.email': email }
+      const result = await plantsCollection.find(query).toArray();
       res.send(result);
     })
-  //  plant delete seller
-    app.delete('/plants/:id',verifyToken,verifySeller,async(req,res)=>{
-      const id=req.params.id
-      const query={_id:new ObjectId(id)}
-      const result=await plantsCollection.deleteOne(query)
+
+
+    //  plant delete seller
+    app.delete('/plants/:id', verifyToken, verifySeller, async (req, res) => {
+      const id = req.params.id
+      const query = { _id: new ObjectId(id) }
+      const result = await plantsCollection.deleteOne(query)
       res.send(result);
     })
     app.post('/users/:email', verifyToken, async (req, res) => {
@@ -179,17 +222,35 @@ async function run() {
       res.send(result);
     })
     // get all user 
-    app.get('/all-user/:email', verifyToken,verifyAdmin, async (req, res) => {
+    app.get('/all-user/:email', verifyToken, verifyAdmin, async (req, res) => {
       const email = req.params.email;
       const query = { email: { $ne: email } }
       const result = await userCollection.find(query).toArray();
       res.send(result)
     })
     // save a plant data in db
-    app.post('/plants', verifyToken,verifySeller, async (req, res) => {
+    app.post('/plants', verifyToken, verifySeller, async (req, res) => {
       const plant = req.body;
       const result = await plantsCollection.insertOne(plant);
       res.send(result);
+    })
+    // update seller plants
+    app.put('/update/plants/:id', verifyToken, verifySeller, async (req, res) => {
+      const id = req.params.id;
+      const plant = req.body;
+      const filter = { _id: new ObjectId(id) }
+      const updateDoc = {
+        $set: {
+          name: plant?.name,
+          price: plant?.price,
+          quantity: plant?.quantity,
+          category: plant?.category,
+          image: plant?.imageUrl,
+
+        }
+      }
+      const result = await plantsCollection.updateOne(filter, updateDoc);
+      res.send(result)
     })
     //order cancel in the database
     app.delete('/order/delete/:id', async (req, res) => {
@@ -289,7 +350,7 @@ async function run() {
           .clearCookie('token', {
             maxAge: 0,
             secure: false,
-            sameSite: 'none',
+            sameSite: 'lax',
           })
           .send({ success: true })
       } catch (err) {

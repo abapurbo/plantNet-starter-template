@@ -1,8 +1,18 @@
 import { Helmet } from 'react-helmet-async'
 
 import SellerOrderDataRow from '../../../components/Dashboard/TableRows/SellerOrderDataRow'
+import useAxiosSecure from '../../../hooks/useAxiosSecure'
+import { useQuery } from '@tanstack/react-query';
 
 const ManageOrders = () => {
+  const axiosSecure = useAxiosSecure();
+  const {data:mangeOrder=[],isLoading,refetch}=useQuery({
+    queryKey:['mangeOrder'],
+    queryFn:async()=>{
+      const res=await axiosSecure.get('/mange/order')
+      return res.data
+    }
+  })
   return (
     <>
       <Helmet>
@@ -61,7 +71,9 @@ const ManageOrders = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <SellerOrderDataRow />
+                  {
+                    mangeOrder.map((order,index)=><SellerOrderDataRow order={order} refetch={refetch} key={index} />)
+                  }
                 </tbody>
               </table>
             </div>

@@ -6,15 +6,17 @@ import PurchaseModal from '../../components/Modal/PurchaseModal'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios'
+import useAxiosSecure from './../../hooks/useAxiosSecure';
+
 import LoadingSpinner from './../../components/Shared/LoadingSpinner';
 const PlantDetails = () => {
   let [isOpen, setIsOpen] = useState(false)
+  const axiosSecure=useAxiosSecure()
   const { id } = useParams()
   const { data,isLoading,refetch} = useQuery({
     queryKey: ['plantDetails',id],
     queryFn: async () => {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/plantDetails/${id}`,{
+      const res = await axiosSecure.get(`${import.meta.env.VITE_API_URL}/plantDetails/${id}`,{
         withCredentials:true
       });
       return res.data
@@ -42,7 +44,7 @@ const PlantDetails = () => {
             <div className='w-full overflow-hidden rounded-xl'>
               <img
                 className='object-cover w-full'
-                src={data.image}
+                src={data?.image}
                 alt='header image'
               />
             </div>
@@ -59,7 +61,7 @@ const PlantDetails = () => {
             className='
           text-lg font-light text-neutral-500'
           >
-            {data.description}
+            {data?.description}
           </div>
           <hr className='my-6' />
 
@@ -73,7 +75,7 @@ const PlantDetails = () => {
                 gap-2
               '
           >
-            <div>Seller: {data.seller?.name}</div>
+            <div>Seller: {data?.seller?.name}</div>
 
             <img
               className='rounded-full'
