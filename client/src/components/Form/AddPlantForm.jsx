@@ -1,6 +1,7 @@
 /* eslint-disable react/prop-types */
 // eslint-disable-next-line react/prop-types
 import { TbFidgetSpinner } from 'react-icons/tb';
+import { sortImageName } from '../../utillities';
 
 const AddPlantForm = ({ handleSubmit, setUploadImageText, uploadImageText, isLoading }) => {
 console.log(uploadImageText)
@@ -103,7 +104,9 @@ console.log(uploadImageText)
                     />
 
                     <div className='bg-lime-500 text-white border border-gray-300 rounded font-semibold cursor-pointer p-1 px-3 hover:bg-lime-500'>
-                      {uploadImageText?.image?.name}
+                     {
+                      sortImageName(uploadImageText?.image)
+                     }
                     </div>
                   </label>
                 </div>

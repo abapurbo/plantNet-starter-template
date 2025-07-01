@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async'
 import coverImg from '../../../assets/images/cover.jpg'
 import useRole from '../../../hooks/useRole'
 import LoadingSpinner from './../../../components/Shared/LoadingSpinner';
+import { Link } from 'react-router-dom';
 const Profile = () => {
   const { user, loading } = useAuth()
   const [role, isLoading] = useRole()
@@ -24,7 +25,7 @@ const Profile = () => {
           <a href='#' className='relative block'>
             <img
               alt='profile'
-              src={user.photoURL}
+              src={user?.photoURL}
               className='mx-auto object-cover rounded-full h-24 w-24  border-2 border-white '
             />
           </a>
@@ -50,7 +51,7 @@ const Profile = () => {
 
               <div>
                 <button className='bg-lime-500 px-10 py-1 rounded-lg text-black cursor-pointer hover:bg-lime-800 block mb-1'>
-                  Update Profile
+               <Link to='/updateProfile'>Update Profile</Link>
                 </button>
                 <button className='bg-lime-500 px-7 py-1 rounded-lg text-black cursor-pointer hover:bg-lime-800'>
                   Change Password

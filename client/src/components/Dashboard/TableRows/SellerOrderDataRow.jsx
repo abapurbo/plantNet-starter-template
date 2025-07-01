@@ -7,10 +7,24 @@ const SellerOrderDataRow = ({ order, refetch }) => {
   let [isOpen, setIsOpen] = useState(false)
   const closeModal = () => setIsOpen(false)
   const axiosSecure = useAxiosSecure()
-  const { name, email, totalPrice, quantity, status, address, _id } = order || {}
+  const { name, customer, totalPrice, quantity, status, address, _id ,plantId } = order || {}
+  // delete order 
+ const handleDelete = async () => {
+    try {
+      // console.log(id)
+      await axiosSecure.delete(`/order/delete/${_id}`)
+      await axiosSecure.patch(`/plants/quantity/${plantId}`, { updateQuantity: quantity, status: 'increase' })
+    } catch (err) {
+      toast.error(err.response.data.message)
+    } finally {
+      closeModal()
+      refetch()
+    }
+  }
+  // update status
   const handleChangeStatus = async (e) => {
-
     const updateStatus = e.target.value;
+    if (status === updateStatus) return 
     // send server side data
     try {
       await axiosSecure.patch(`/customer/order/${_id}`, { status: updateStatus })
@@ -27,7 +41,7 @@ const SellerOrderDataRow = ({ order, refetch }) => {
         <p className='text-gray-900 whitespace-no-wrap'>{name}</p>
       </td>
       <td className='px-5 py-5 border-b border-gray-200 bg-white text-sm'>
-        <p className='text-gray-900 whitespace-no-wrap'>{email}</p>
+        <p className='text-gray-900 whitespace-no-wrap'>{customer?.email}</p>
       </td>
       <td className='px-5 py-5 border-b border-gray-200 bg-white text-sm'>
         <p className='text-gray-900 whitespace-no-wrap'>${totalPrice}</p>
@@ -46,6 +60,7 @@ const SellerOrderDataRow = ({ order, refetch }) => {
         <div className='flex items-center gap-2'>
           <select
             onChange={handleChangeStatus}
+             disabled={status==='Delivered'}
             required
             className='p-1 border-2 border-lime-300 focus:outline-lime-500 rounded-md text-gray-900 whitespace-no-wrap bg-white'
             name='category'
@@ -62,10 +77,10 @@ const SellerOrderDataRow = ({ order, refetch }) => {
               aria-hidden='true'
               className='absolute inset-0 bg-red-200 opacity-50 rounded-full'
             ></span>
-            <span className='relative'>Cancel</span>
+            <span  className='relative'>Cancel</span>
           </button>
         </div>
-        <DeleteModal isOpen={isOpen} closeModal={closeModal} />
+        <DeleteModal handleDelete={handleDelete} isOpen={isOpen} closeModal={closeModal} />
       </td>
     </tr>
   )

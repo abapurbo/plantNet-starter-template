@@ -9,6 +9,7 @@ const Statistics = () => {
     return <LoadingSpinner></LoadingSpinner>
   }
   if (role === 'customer') return <Navigate to='/dashboard/my-orders'></Navigate>
+  if (role === 'seller') return <Navigate to='/dashboard/my-orders'></Navigate>
   return (
     <div>
       <Helmet>

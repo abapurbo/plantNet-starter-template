@@ -2,9 +2,10 @@ import { useState } from "react"
 import { imageUpload } from "../../api/utilites"
 import useAxiosSecure from "../../hooks/useAxiosSecure"
 import toast from "react-hot-toast"
+import { sortImageName } from "../../utillities"
 
 // eslint-disable-next-line react/prop-types
-const UpdatePlantForm = ({ plant,refetch,setIsEditModalOpen }) => {
+const UpdatePlantForm = ({ plant, refetch, setIsEditModalOpen }) => {
   const { name, category, description, price, image, quantity, _id } = plant || {}
   const [updateImage, setUpdateImage] = useState({ image: { name: 'Upload image' } })
   const axiosSecure = useAxiosSecure()
@@ -28,13 +29,13 @@ const UpdatePlantForm = ({ plant,refetch,setIsEditModalOpen }) => {
     }
     // transfer server side data and saver database
     try {
-      await axiosSecure.put(`/update/plants/${_id}`,updatePlantData)
+      await axiosSecure.put(`/update/plants/${_id}`, updatePlantData)
       refetch()
       toast.success('Data added successfully')
     } catch (err) {
       console.log(err)
-    } 
-    finally{
+    }
+    finally {
       setIsEditModalOpen(false)
     }
   }
@@ -146,7 +147,10 @@ const UpdatePlantForm = ({ plant,refetch,setIsEditModalOpen }) => {
                       hidden
                     />
                     <div className='bg-lime-500 text-white border border-gray-300 rounded font-semibold cursor-pointer p-1 px-3 hover:bg-lime-500'>
-                      {updateImage?.image?.name}
+
+                      {
+                        sortImageName(updateImage?.image)
+                      }
                     </div>
                   </label>
                 </div>

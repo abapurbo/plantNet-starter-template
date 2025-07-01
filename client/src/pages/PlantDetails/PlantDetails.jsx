@@ -7,17 +7,20 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query';
 import useAxiosSecure from './../../hooks/useAxiosSecure';
-
+import useRole from '../../hooks/useRole'
 import LoadingSpinner from './../../components/Shared/LoadingSpinner';
+import useAuth from '../../hooks/useAuth'
 const PlantDetails = () => {
+  const { user } = useAuth()
+  const [role] = useRole()
   let [isOpen, setIsOpen] = useState(false)
-  const axiosSecure=useAxiosSecure()
+  const axiosSecure = useAxiosSecure()
   const { id } = useParams()
-  const { data,isLoading,refetch} = useQuery({
-    queryKey: ['plantDetails',id],
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['plantDetails', id],
     queryFn: async () => {
-      const res = await axiosSecure.get(`${import.meta.env.VITE_API_URL}/plantDetails/${id}`,{
-        withCredentials:true
+      const res = await axiosSecure.get(`${import.meta.env.VITE_API_URL}/plantDetails/${id}`, {
+        withCredentials: true
       });
       return res.data
 
@@ -28,7 +31,7 @@ const PlantDetails = () => {
   const closeModal = () => {
     setIsOpen(false)
   }
-  if(isLoading){
+  if (isLoading) {
     return <LoadingSpinner></LoadingSpinner>
   }
 
@@ -102,7 +105,9 @@ const PlantDetails = () => {
           <div className='flex justify-between'>
             <p className='font-bold text-3xl text-gray-500'>Price: {data?.price}$</p>
             <div>
-              <Button onClick={()=>setIsOpen(true)} label={data.quantity>0?'Purchase':'Out look stork'}/>
+              <Button
+                disabled={!user ||user?.email===user?.seller?.email || role !== 'customer' || data?.quantity === 0}
+                onClick={() => setIsOpen(true)} label={data.quantity > 0 ? 'Purchase' : 'Out look stork'} />
             </div>
           </div>
           <hr className='my-6' />

@@ -3,9 +3,10 @@ import useAuth from "../hooks/useAuth";
 import LoadingSpinner from './../components/Shared/LoadingSpinner';
 import useRole from "../hooks/useRole";
 
-const SellerRoute = ({ children }) => {
-    const { user, loading } = useAuth()
-    const [role,isLoading]=useRole()
+// eslint-disable-next-line react/prop-types
+const SellerRoute = ({children}) => {
+    const {  loading } = useAuth()
+    const [role]=useRole()
 
     if (loading) {
         return <LoadingSpinner></LoadingSpinner>

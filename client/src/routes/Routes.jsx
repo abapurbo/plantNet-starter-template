@@ -15,6 +15,8 @@ import MyInventory from '../pages/Dashboard/Seller/MyInventory'
 import ManageOrders from '../pages/Dashboard/Seller/ManageOrders'
 import MyOrders from '../pages/Dashboard/Customer/MyOrders'
 import SellerRoute from './SellerRoute'
+import UpdateUserProfile from '../pages/Dashboard/UpdateUserProfile/UpdateUserProfile'
+
 
 export const router = createBrowserRouter([
   {
@@ -34,6 +36,7 @@ export const router = createBrowserRouter([
   },
   { path: '/login', element: <Login /> },
   { path: '/signup', element: <SignUp /> },
+  {path:'/updateProfile',element:<UpdateUserProfile/>},
   {
     path: '/dashboard',
     element: (

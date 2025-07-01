@@ -5,7 +5,7 @@ const cookieParser = require('cookie-parser')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const jwt = require('jsonwebtoken')
 const morgan = require('morgan')
-
+const nodemailer = require("nodemailer");
 const port = process.env.PORT || 4000
 const app = express()
 // middleware
@@ -62,6 +62,41 @@ async function run() {
       }
       next()
 
+    }
+    // email send info
+    const sendEmail = (emailAddress, emailData) => {
+      const transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false, // true for 465, false for other ports
+        auth: {
+          user: process.env.MAILER_USER,
+          pass: process.env.MAILER_PASS,
+        },
+      });
+      // Verify connection
+      transporter.verify((error, success) => {
+        if (error) {
+          console.log('verify hello', error)
+        } else {
+          console.log(success)
+        }
+      })
+      // send file
+      const mailBody = {
+        from: `"Maddison Foo Koch" ${process.env.MAILER_USER}`,
+        to: emailAddress,
+        subject: emailData?.subject,
+        html: `<p>${emailData?.message}</p>`, // HTML body
+      }
+      transporter.sendMail(mailBody, (err, info) => {
+        if (err) {
+          console.log('error', err)
+        }
+        else {
+          console.log('email', info?.response)
+        }
+      })
     }
     const verifySeller = async (req, res, next) => {
       const email = req.user?.email;
@@ -148,20 +183,31 @@ async function run() {
       const result = await orderCollection.aggregate([
         {
           $match: query
-
-        }, {
-          $unwind: '$customer'
-        }, {
+        },
+        {
           $addFields: {
-            name: '$customer.name',
-            email: '$customer.email',
-            image: '$customer.image'
-
+            plantId: { $toObjectId: '$plantId' }
+          },
+        }, {
+          $lookup: {
+            from: 'plants',
+            localField: 'plantId',
+            foreignField: '_id',
+            as: 'plants'
+          },
+        },
+        {
+          $unwind: '$plants'
+        },
+        {
+          $addFields: {
+            name: '$plants.name'
           }
-        }
-        , {
+        }, {
           $project: {
-            customer: 0,
+            plants: 0,
+
+
           }
         }
       ]).toArray();
@@ -180,6 +226,20 @@ async function run() {
       }
       const result = await orderCollection.updateOne(filter, updateStatus);
       res.send(result)
+    })
+    // update your profile
+    app.patch('/update/profile/:email', verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const updateData = req.body;
+      const filter = { email: email };
+      const updateDoc = {
+        $set: {
+          name: updateData?.name,
+          image: updateData?.image
+        }
+      }
+      const result = await userCollection.updateOne(filter, updateDoc);
+      res.send(result);
     })
     // user role setup
     app.get('/user/role/:email', verifyToken, async (req, res) => {
@@ -236,6 +296,7 @@ async function run() {
     })
     // update seller plants
     app.put('/update/plants/:id', verifyToken, verifySeller, async (req, res) => {
+
       const id = req.params.id;
       const plant = req.body;
       const filter = { _id: new ObjectId(id) }
@@ -257,7 +318,7 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const order = await orderCollection.findOne(query)
-      if (order.status === 'delivered') {
+      if (order.status === 'Delivered') {
         return res.status(409).send({ message: "Sorry, you cannot cancel this order because it has already been delivered." })
       }
       const result = await orderCollection.deleteOne(query);
@@ -283,7 +344,6 @@ async function run() {
         }
       }
       const result = await plantsCollection.updateOne(filter, updateDoc);
-      console.log(result)
       res.send(result);
     })
     // mange user status and role
@@ -300,7 +360,6 @@ async function run() {
         }
       };
       const result = await userCollection.updateOne(query, updateDoc);
-      console.log(result)
       res.send(result)
     })
 
@@ -324,10 +383,71 @@ async function run() {
         totalPrice: totalPrice,
         seller: plant?.seller?.email,
         status: 'pending',
-
       }
       const result = await orderCollection.insertOne(orderPlant);
+      console.log(result)
+      if (result?.insertedId) {
+        sendEmail(order?.customer?.email, {
+          subject: 'Your order successfully',
+          message: `You've placed an order successfully.Transaction Id: ${result?.insertedId}`
+        })
+        // To seller
+        sendEmail(plant?.seller?.email, {
+          subject: 'Hurray!, You have an order to process',
+          message: `Get the plants ready for ${order?.customer?.name}`
+        })
+      }
       res.send(result)
+    })
+    // admin stat
+    app.get('/admin-stat', verifyToken, verifyAdmin, async (req, res) => {
+      const totalUsers = await userCollection.estimatedDocumentCount();
+      const totalPlants = await plantsCollection.estimatedDocumentCount();
+      const chartData = await orderCollection.aggregate([
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: '%Y-%m-%d',
+                date: { $toDate: '$_id' },
+              }
+            },
+            quantity: {
+              $sum: '$quantity'
+            },
+            price: {
+              $sum: '$totalPrice'
+            },
+            orders: {
+              $sum: 1
+            }
+          }
+        }, {
+           $project:{
+            _id:0,
+            date:'$_id',
+            quantity:1,
+            price:1,
+            orders:1
+           }
+        }
+      ]).next()
+      const orderDetails = await orderCollection.aggregate([
+        {
+          $group: {
+            _id: null,
+            // akta akta kore order collection er kache jabo totalPrice juk korbo 
+            totalRevenue: { $sum: '$totalPrice' },
+            // akta akta kore order collection er kache jabo ar juk korbo koyta order hoyche
+            totalOrder: { $sum: 1 }
+          }
+        }, {
+          $project: {
+            _id: 0
+          }
+        }
+      ]).next()
+      res.send({ totalUsers, totalPlants, ...orderDetails,chartData })
     })
     // update user role
     app.patch('/user-role/:email', verifyToken, async (req, res) => {

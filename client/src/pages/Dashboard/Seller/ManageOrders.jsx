@@ -13,6 +13,7 @@ const ManageOrders = () => {
       return res.data
     }
   })
+  console.log(mangeOrder)
   return (
     <>
       <Helmet>
